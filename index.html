@@ -6,26 +6,63 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
       margin: 2rem;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    h1, h2 {
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
     }
 
     textarea {
       width: 100%;
-      height: 150px;
+      height: 160px;
       font-size: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: vertical;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
     button {
       margin-top: 1rem;
       margin-right: 1rem;
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1.2rem;
       font-size: 1rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: #0077cc;
+      color: white;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #005fa3;
     }
 
     #chartContainer {
       margin-top: 2rem;
       display: none;
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    canvas {
+      border-radius: 8px;
     }
 
     @media print {
@@ -68,21 +105,25 @@
     function generateChart() {
       const input = document.getElementById('inputData').value.trim();
       const lines = input.split('\n');
-      const names = [];
-      const values = [];
+      let entries = [];
 
       for (const line of lines) {
         const [name, value] = line.split(',');
         if (name && !isNaN(parseInt(value))) {
-          names.push(name.trim());
-          values.push(parseInt(value));
+          entries.push({ name: name.trim(), value: parseInt(value) });
         }
       }
 
-      if (names.length === 0) {
+      if (entries.length === 0) {
         alert("Please enter at least one valid line in the format: Name,Number");
         return;
       }
+
+      // Sort entries by value descending
+      entries.sort((a, b) => b.value - a.value);
+
+      const names = entries.map(entry => entry.name);
+      const values = entries.map(entry => entry.value);
 
       document.getElementById('chartContainer').style.display = 'block';
 
@@ -110,13 +151,24 @@
               beginAtZero: true,
               title: {
                 display: true,
-                text: 'Cards Sold'
+                text: 'Cards Sold',
+                font: {
+                  size: 14
+                }
               }
             },
             y: {
+              ticks: {
+                font: {
+                  size: 14
+                }
+              },
               title: {
                 display: true,
-                text: 'Names'
+                text: 'Name',
+                font: {
+                  size: 14
+                }
               }
             }
           },
