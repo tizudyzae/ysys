@@ -12,9 +12,10 @@
       color: #333;
     }
 
-    h1, h2 {
+    h1 {
+      text-align: center;
+      font-size: 2rem;
       font-weight: 600;
-      margin-bottom: 1rem;
     }
 
     .entry-grid {
@@ -67,6 +68,10 @@
       background-color: #005fa3;
     }
 
+    #controls {
+      margin-bottom: 2rem;
+    }
+
     #chartContainer {
       margin-top: 2rem;
       display: none;
@@ -78,6 +83,23 @@
 
     canvas {
       border-radius: 8px;
+    }
+
+    label.date-label {
+      font-weight: 500;
+      margin-right: 0.5rem;
+    }
+
+    .date-inputs {
+      margin-top: 1rem;
+    }
+
+    .center-text {
+      text-align: center;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      font-style: italic;
+      color: #555;
     }
 
     @media print {
@@ -105,15 +127,31 @@
 </head>
 <body>
   <h1>Membership Card Sales Chart</h1>
-  <p>Enter quantities below. Tick the box to exclude a person from the chart.</p>
 
-  <div class="entry-grid" id="entryGrid"></div>
+  <div id="controls">
+    <div class="entry-grid" id="entryGrid"></div>
 
-  <button onclick="generateChart()">Generate Chart</button>
-  <button onclick="window.print()">Print Chart</button>
+    <div class="date-inputs">
+      <label class="date-label">Start Date:</label>
+      <input type="date" id="startDate">
+      <label class="date-label">End Date:</label>
+      <input type="date" id="endDate">
+    </div>
+
+    <div style="margin-top: 1rem;">
+      <label>
+        <input type="checkbox" id="titleToggle">
+        Show “Your Store, Your Say Responses” instead of “Membership Card Sales”
+      </label>
+    </div>
+
+    <button onclick="generateChart()">Generate Chart</button>
+    <button onclick="window.print()">Print Chart</button>
+  </div>
 
   <div id="chartContainer">
-    <h2>Sales Chart</h2>
+    <h2 id="chartTitle" style="text-align: center; font-size: 1.5rem; margin-bottom: 0;"></h2>
+    <div id="chartSubtitle" class="center-text"></div>
     <canvas id="barChart" width="1000" height="600"></canvas>
   </div>
 
@@ -135,7 +173,7 @@
 
       const label = document.createElement('label');
       label.textContent = name;
-      label.contentEditable = isCustom; // allow editing custom names
+      label.contentEditable = isCustom;
       label.spellcheck = false;
 
       const input = document.createElement('input');
@@ -149,10 +187,10 @@
       entryGrid.appendChild(div);
     }
 
-    // Create preset entries
+    // Presets
     presetNames.forEach(name => createEntry(name));
 
-    // Add 5 extra blank custom fields
+    // Custom
     for (let i = 0; i < 5; i++) {
       createEntry('New Name', 0, true);
     }
@@ -166,13 +204,13 @@
         const label = div.querySelector('label').textContent.trim();
         const qty = parseInt(div.querySelector('input[type="number"]').value);
 
-        if (!checkbox.checked && label && !isNaN(qty) && qty > 0) {
+        if (!checkbox.checked && label && !isNaN(qty)) {
           entries.push({ name: label, value: qty });
         }
       });
 
       if (entries.length === 0) {
-        alert("Please enter at least one quantity greater than 0 and leave that person unticked.");
+        alert("Please enter at least one valid entry and leave that person unticked.");
         return;
       }
 
@@ -180,6 +218,14 @@
       const names = entries.map(e => e.name);
       const values = entries.map(e => e.value);
 
+      const titleToggle = document.getElementById("titleToggle").checked;
+      const title = titleToggle ? "Your Store, Your Say Responses" : "Membership Card Sales";
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+      const subtitle = (startDate && endDate) ? `From ${startDate} to ${endDate}` : "";
+
+      document.getElementById("chartTitle").textContent = title;
+      document.getElementById("chartSubtitle").textContent = subtitle;
       document.getElementById('chartContainer').style.display = 'block';
 
       const ctx = document.getElementById('barChart').getContext('2d');
@@ -192,7 +238,7 @@
         data: {
           labels: names,
           datasets: [{
-            label: 'Membership Cards Sold',
+            label: '',
             data: values,
             backgroundColor: 'steelblue'
           }]
@@ -204,25 +250,19 @@
           scales: {
             x: {
               beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Cards Sold',
-                font: { size: 14 }
-              }
+              grid: { display: false },
+              ticks: { precision: 0 }
             },
             y: {
+              grid: { display: false },
               ticks: {
-                font: { size: 14 }
-              },
-              title: {
-                display: true,
-                text: 'Name',
                 font: { size: 14 }
               }
             }
           },
           plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            title: { display: false }
           }
         }
       });
