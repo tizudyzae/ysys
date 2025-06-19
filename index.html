@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Membership Sales Chart</title>
+  <meta charset="UTF-8" />
+  <title>Membership Card Sales Chart</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -21,6 +21,7 @@
 
     .date-inputs {
       display: flex;
+      flex-wrap: wrap;
       gap: 1rem;
       align-items: center;
       margin-bottom: 1.5rem;
@@ -140,14 +141,14 @@
 
   <div class="date-inputs">
     <label for="startDate">Start Date:</label>
-    <input type="date" id="startDate">
+    <input type="date" id="startDate" />
     <label for="endDate">End Date:</label>
-    <input type="date" id="endDate">
+    <input type="date" id="endDate" />
   </div>
 
   <div style="margin-bottom: 1.5rem;">
     <label>
-      <input type="checkbox" id="titleToggle">
+      <input type="checkbox" id="titleToggle" />
       Show “Your Store, Your Say Responses” instead of “Membership Card Sales”
     </label>
   </div>
@@ -170,22 +171,22 @@
       "Nathan", "Pauline", "Samantha", "Wendi"
     ].sort();
 
-    const entryGrid = document.getElementById('entryGrid');
+    const entryGrid = document.getElementById("entryGrid");
 
-    function createEntry(name = '', qty = 0, isCustom = false) {
-      const div = document.createElement('div');
-      div.className = 'entry';
+    function createEntry(name = "", qty = 0, isCustom = false) {
+      const div = document.createElement("div");
+      div.className = "entry";
 
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
 
-      const label = document.createElement('label');
+      const label = document.createElement("label");
       label.textContent = name;
       label.contentEditable = isCustom;
       label.spellcheck = false;
 
-      const input = document.createElement('input');
-      input.type = 'number';
+      const input = document.createElement("input");
+      input.type = "number";
       input.min = 0;
       input.value = qty;
 
@@ -195,34 +196,34 @@
       entryGrid.appendChild(div);
     }
 
-    // Add preset names
-    presetNames.forEach(name => createEntry(name));
+    // Add presets
+    presetNames.forEach((name) => createEntry(name));
 
-    // Add 5 blank entries
+    // Add 5 custom slots
     for (let i = 0; i < 5; i++) {
-      createEntry('New Name', 0, true);
+      createEntry("New Name", 0, true);
     }
 
     function formatDate(dateStr) {
-      if (!dateStr) return '';
+      if (!dateStr) return "";
       const d = new Date(dateStr);
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
       const year = d.getFullYear();
       return `${day}/${month}/${year}`;
     }
 
     function generateChart() {
       const entries = [];
-      const divs = document.querySelectorAll('#entryGrid .entry');
+      const divs = document.querySelectorAll("#entryGrid .entry");
 
-      divs.forEach(div => {
+      divs.forEach((div) => {
         const checkbox = div.querySelector('input[type="checkbox"]');
-        const label = div.querySelector('label').textContent.trim();
+        const label = div.querySelector("label").textContent.trim();
         const qty = parseInt(div.querySelector('input[type="number"]').value);
+        const isDefaultCustom = label === "New Name";
 
-        const isCustom = label === 'New Name';
-        if (!checkbox.checked && label && !isNaN(qty) && (!isCustom || label !== 'New Name')) {
+        if (!checkbox.checked && label && !isNaN(qty) && (!isDefaultCustom || label !== "New Name")) {
           entries.push({ name: label, value: qty });
         }
       });
@@ -233,37 +234,40 @@
       }
 
       entries.sort((a, b) => b.value - a.value);
-      const names = entries.map(e => e.name);
-      const values = entries.map(e => e.value);
+      const names = entries.map((e) => e.name);
+      const values = entries.map((e) => e.value);
 
       const titleToggle = document.getElementById("titleToggle").checked;
       const title = titleToggle ? "Your Store, Your Say Responses" : "Membership Card Sales";
 
       const startDate = formatDate(document.getElementById("startDate").value);
       const endDate = formatDate(document.getElementById("endDate").value);
-      const subtitle = (startDate && endDate) ? `From ${startDate} to ${endDate}` : "";
+      const subtitle = startDate && endDate ? `From ${startDate} to ${endDate}` : "";
 
       document.getElementById("chartTitle").textContent = title;
       document.getElementById("chartSubtitle").textContent = subtitle;
-      document.getElementById('chartContainer').style.display = 'block';
+      document.getElementById("chartContainer").style.display = "block";
 
-      const ctx = document.getElementById('barChart').getContext('2d');
+      const ctx = document.getElementById("barChart").getContext("2d");
       if (window.barChartInstance) {
         window.barChartInstance.destroy();
       }
 
       window.barChartInstance = new Chart(ctx, {
-        type: 'bar',
+        type: "bar",
         data: {
           labels: names,
           datasets: [{
-            label: '',
+            label: "",
             data: values,
-            backgroundColor: 'steelblue'
+            backgroundColor: "steelblue",
+            barThickness: function(ctx) {
+              return ctx.raw === 0 ? 6 : 24;
+            }
           }]
         },
         options: {
-          indexAxis: 'y',
+          indexAxis: "y",
           responsive: false,
           maintainAspectRatio: false,
           scales: {
@@ -274,7 +278,9 @@
             },
             y: {
               grid: { display: false },
-              ticks: { font: { size: 14 } }
+              ticks: {
+                font: { size: 14 }
+              }
             }
           },
           plugins: {
