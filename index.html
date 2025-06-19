@@ -172,7 +172,7 @@
   <div id="chartContainer">
     <h2 id="chartTitle" style="text-align: center; font-size: 1.5rem; margin-bottom: 0;"></h2>
     <div id="chartSubtitle" class="center-text"></div>
-    <canvas id="barChart" width="1000" height="600"></canvas>
+    <canvas id="barChart"></canvas>
     <div id="zeroList"></div>
   </div>
 
@@ -265,12 +265,12 @@
             label: "",
             data: entries.map(e => e.value),
             backgroundColor: "steelblue",
-            barThickness: 24
+            barThickness: 600 / entries.length  // dynamic height based on count
           }]
         },
         options: {
           indexAxis: "y",
-          responsive: false,
+          responsive: true,
           maintainAspectRatio: false,
           scales: {
             x: { beginAtZero: true, grid: { display: false }, ticks: { precision: 0 } },
@@ -283,9 +283,13 @@
         }
       });
 
+      const zeroLabel = document.getElementById("titleToggle").checked
+        ? "No Your Store, Your Say Responses"
+        : "No cards sold";
+
       document.getElementById("zeroList").textContent =
         zeros.length > 0
-          ? `No cards sold: ${zeros.sort().join(", ")}`
+          ? `${zeroLabel}: ${zeros.sort().join(", ")}`
           : "";
 
       document.getElementById("chartContainer").style.display = "block";
