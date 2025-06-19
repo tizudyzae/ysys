@@ -11,33 +11,24 @@
       background-color: #f9f9f9;
       color: #333;
     }
-
     h1 {
       text-align: center;
       font-size: 2rem;
       font-weight: 600;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1rem;
     }
-
-    .date-inputs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      align-items: center;
-      margin-bottom: 1.5rem;
+    .subtitle {
+      text-align: center;
+      font-style: italic;
+      color: #555;
+      margin-bottom: 1rem;
     }
-
-    .date-inputs label {
-      font-weight: 500;
-    }
-
     .entry-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1rem;
       margin-bottom: 2rem;
     }
-
     .entry {
       background: #fff;
       padding: 0.8rem;
@@ -47,22 +38,16 @@
       align-items: center;
       justify-content: space-between;
     }
-
     .entry label {
       flex: 1;
       margin-left: 0.5rem;
     }
-
     .entry input[type="number"] {
       width: 60px;
-      padding: 0.3rem;
-      margin-left: 0.5rem;
     }
-
     .entry input[type="checkbox"] {
       margin-right: 0.5rem;
     }
-
     button {
       margin-top: 1rem;
       margin-right: 1rem;
@@ -74,61 +59,31 @@
       cursor: pointer;
       background-color: #0077cc;
       color: white;
-      transition: background-color 0.3s ease;
     }
-
     button:hover {
       background-color: #005fa3;
     }
-
-    .center-text {
-      text-align: center;
-      margin-top: 0.5rem;
-      font-size: 1rem;
-      font-style: italic;
-      color: #555;
-    }
-
-    #chartContainer {
+    .charts {
       margin-top: 2rem;
-      display: none;
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
     canvas {
-      border-radius: 8px;
       display: block;
       margin: 0 auto;
+      max-width: 1000px;
     }
-
     @media print {
       body * {
         visibility: hidden;
       }
-
-      #chartContainer, #chartContainer * {
+      #printArea, #printArea * {
         visibility: visible;
       }
-
-      #chartContainer {
+      #printArea {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
       }
-
-      canvas {
-        width: 1000px !important;
-        height: 600px !important;
-        max-height: 90vh;
-      }
-
       @page {
         size: landscape;
         margin: 1cm;
@@ -138,155 +93,113 @@
 </head>
 <body>
   <h1>Membership Card Sales Chart</h1>
-
-  <div class="date-inputs">
-    <label for="startDate">Start Date:</label>
-    <input type="date" id="startDate" />
-    <label for="endDate">End Date:</label>
-    <input type="date" id="endDate" />
-  </div>
-
-  <div style="margin-bottom: 1.5rem;">
-    <label>
-      <input type="checkbox" id="titleToggle" />
-      Show “Your Store, Your Say Responses” instead of “Membership Card Sales”
-    </label>
-  </div>
-
+  <div class="subtitle" id="subtitle"></div>
   <div class="entry-grid" id="entryGrid"></div>
 
-  <button onclick="generateChart()">Generate Chart</button>
+  <label>Start Date: <input type="date" id="startDate"></label>
+  <label style="margin-left:1rem">End Date: <input type="date" id="endDate"></label>
+
+  <br><br>
+  <button onclick="generateCharts()">Generate Chart</button>
   <button onclick="window.print()">Print Chart</button>
 
-  <div id="chartContainer">
-    <h2 id="chartTitle" style="text-align: center; font-size: 1.5rem; margin-bottom: 0;"></h2>
-    <div id="chartSubtitle" class="center-text"></div>
-    <canvas id="barChart" width="1000" height="600"></canvas>
+  <div id="printArea" class="charts">
+    <canvas id="chartMain" width="1000" height="400"></canvas>
+    <canvas id="chartZero" width="1000" height="100"></canvas>
   </div>
 
   <script>
-    const presetNames = [
+    const names = [
       "Abigail", "Debbie", "Diane", "Elizabeth", "George",
       "Harvey", "Jacqueline", "Jessica", "Joshua", "Laura",
       "Nathan", "Pauline", "Samantha", "Wendi"
     ].sort();
 
     const entryGrid = document.getElementById("entryGrid");
-
-    function createEntry(name = "", qty = 0, isCustom = false) {
+    function createEntry(name = '', isCustom = false) {
       const div = document.createElement("div");
       div.className = "entry";
-
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
-
       const label = document.createElement("label");
       label.textContent = name;
       label.contentEditable = isCustom;
-      label.spellcheck = false;
-
       const input = document.createElement("input");
       input.type = "number";
+      input.value = 0;
       input.min = 0;
-      input.value = qty;
-
-      div.appendChild(checkbox);
-      div.appendChild(label);
-      div.appendChild(input);
+      div.append(checkbox, label, input);
       entryGrid.appendChild(div);
     }
+    names.forEach(n => createEntry(n));
+    for (let i = 0; i < 5; i++) createEntry("New Name", true);
 
-    // Add presets
-    presetNames.forEach((name) => createEntry(name));
-
-    // Add 5 custom slots
-    for (let i = 0; i < 5; i++) {
-      createEntry("New Name", 0, true);
+    function formatDate(d) {
+      if (!d) return '';
+      const date = new Date(d);
+      return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${date.getFullYear()}`;
     }
 
-    function formatDate(dateStr) {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
-    }
-
-    function generateChart() {
-      const entries = [];
-      const divs = document.querySelectorAll("#entryGrid .entry");
-
-      divs.forEach((div) => {
-        const checkbox = div.querySelector('input[type="checkbox"]');
+    function generateCharts() {
+      const entries = [], zeros = [];
+      document.querySelectorAll(".entry").forEach(div => {
+        const checked = div.querySelector("input[type='checkbox']").checked;
         const label = div.querySelector("label").textContent.trim();
-        const qty = parseInt(div.querySelector('input[type="number"]').value);
-        const isDefaultCustom = label === "New Name";
-
-        if (!checkbox.checked && label && !isNaN(qty) && (!isDefaultCustom || label !== "New Name")) {
-          entries.push({ name: label, value: qty });
+        const value = parseInt(div.querySelector("input[type='number']").value);
+        if (!checked && label && !isNaN(value)) {
+          if (value === 0) zeros.push(label);
+          else entries.push({ name: label, value });
         }
       });
 
-      if (entries.length === 0) {
-        alert("Please enter at least one valid entry and leave that person unticked.");
-        return;
-      }
+      const start = formatDate(document.getElementById("startDate").value);
+      const end = formatDate(document.getElementById("endDate").value);
+      document.getElementById("subtitle").textContent = start && end ? `From ${start} to ${end}` : "";
 
-      entries.sort((a, b) => b.value - a.value);
-      const names = entries.map((e) => e.name);
-      const values = entries.map((e) => e.value);
+      if (window.chartMain) window.chartMain.destroy();
+      if (window.chartZero) window.chartZero.destroy();
 
-      const titleToggle = document.getElementById("titleToggle").checked;
-      const title = titleToggle ? "Your Store, Your Say Responses" : "Membership Card Sales";
-
-      const startDate = formatDate(document.getElementById("startDate").value);
-      const endDate = formatDate(document.getElementById("endDate").value);
-      const subtitle = startDate && endDate ? `From ${startDate} to ${endDate}` : "";
-
-      document.getElementById("chartTitle").textContent = title;
-      document.getElementById("chartSubtitle").textContent = subtitle;
-      document.getElementById("chartContainer").style.display = "block";
-
-      const ctx = document.getElementById("barChart").getContext("2d");
-      if (window.barChartInstance) {
-        window.barChartInstance.destroy();
-      }
-
-      window.barChartInstance = new Chart(ctx, {
-        type: "bar",
+      window.chartMain = new Chart(document.getElementById("chartMain").getContext("2d"), {
+        type: 'bar',
         data: {
-          labels: names,
+          labels: entries.map(e => e.name),
           datasets: [{
-            label: "",
-            data: values,
-            backgroundColor: "steelblue",
-            barThickness: function(ctx) {
-              return ctx.raw === 0 ? 6 : 24;
-            }
+            data: entries.map(e => e.value),
+            backgroundColor: 'steelblue'
           }]
         },
         options: {
-          indexAxis: "y",
+          indexAxis: 'y',
           responsive: false,
           maintainAspectRatio: false,
           scales: {
-            x: {
-              beginAtZero: true,
-              grid: { display: false },
-              ticks: { precision: 0 }
-            },
-            y: {
-              grid: { display: false },
-              ticks: {
-                font: { size: 14 }
-              }
-            }
+            x: { beginAtZero: true, grid: { display: false }, ticks: { precision: 0 } },
+            y: { grid: { display: false } }
           },
-          plugins: {
-            legend: { display: false },
-            title: { display: false }
-          }
+          plugins: { legend: { display: false }, title: { display: false } }
+        }
+      });
+
+      window.chartZero = new Chart(document.getElementById("chartZero").getContext("2d"), {
+        type: 'bar',
+        data: {
+          labels: zeros,
+          datasets: [{
+            data: zeros.map(_ => 0.01), // fake small value to render bar
+            backgroundColor: 'rgba(180,180,180,0.2)',
+            borderColor: 'rgba(180,180,180,0.5)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: false,
+          maintainAspectRatio: false,
+          scales: {
+            x: { display: false },
+            y: { grid: { display: false }, ticks: { color: '#aaa' } }
+          },
+          plugins: { legend: { display: false }, title: { display: false }, tooltip: { enabled: false } }
         }
       });
     }
