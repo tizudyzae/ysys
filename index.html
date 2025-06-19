@@ -251,13 +251,12 @@
           datasets: [{
             label: "",
             data: entries.map(e => e.value),
-            backgroundColor: "steelblue",
-            barThickness: Math.max(20, Math.min(50, Math.floor(500 / Math.max(entries.length, 1))))
+            backgroundColor: "steelblue"
           }]
         },
         options: {
           indexAxis: "y",
-          responsive: true,
+          responsive: false,
           maintainAspectRatio: false,
           scales: {
             x: { beginAtZero: true, grid: { display: false } },
