@@ -16,6 +16,18 @@
       text-align: center;
       font-size: 2rem;
       font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .date-inputs {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .date-inputs label {
+      font-weight: 500;
     }
 
     .entry-grid {
@@ -68,8 +80,12 @@
       background-color: #005fa3;
     }
 
-    #controls {
-      margin-bottom: 2rem;
+    .center-text {
+      text-align: center;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      font-style: italic;
+      color: #555;
     }
 
     #chartContainer {
@@ -83,23 +99,8 @@
 
     canvas {
       border-radius: 8px;
-    }
-
-    label.date-label {
-      font-weight: 500;
-      margin-right: 0.5rem;
-    }
-
-    .date-inputs {
-      margin-top: 1rem;
-    }
-
-    .center-text {
-      text-align: center;
-      margin-top: 0.5rem;
-      font-size: 1rem;
-      font-style: italic;
-      color: #555;
+      display: block;
+      margin: 0 auto;
     }
 
     @media print {
@@ -116,6 +117,15 @@
         top: 0;
         left: 0;
         width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      canvas {
+        width: 1000px !important;
+        height: 600px !important;
+        max-height: 90vh;
       }
 
       @page {
@@ -128,26 +138,24 @@
 <body>
   <h1>Membership Card Sales Chart</h1>
 
-  <div id="controls">
-    <div class="entry-grid" id="entryGrid"></div>
-
-    <div class="date-inputs">
-      <label class="date-label">Start Date:</label>
-      <input type="date" id="startDate">
-      <label class="date-label">End Date:</label>
-      <input type="date" id="endDate">
-    </div>
-
-    <div style="margin-top: 1rem;">
-      <label>
-        <input type="checkbox" id="titleToggle">
-        Show “Your Store, Your Say Responses” instead of “Membership Card Sales”
-      </label>
-    </div>
-
-    <button onclick="generateChart()">Generate Chart</button>
-    <button onclick="window.print()">Print Chart</button>
+  <div class="date-inputs">
+    <label for="startDate">Start Date:</label>
+    <input type="date" id="startDate">
+    <label for="endDate">End Date:</label>
+    <input type="date" id="endDate">
   </div>
+
+  <div style="margin-bottom: 1.5rem;">
+    <label>
+      <input type="checkbox" id="titleToggle">
+      Show “Your Store, Your Say Responses” instead of “Membership Card Sales”
+    </label>
+  </div>
+
+  <div class="entry-grid" id="entryGrid"></div>
+
+  <button onclick="generateChart()">Generate Chart</button>
+  <button onclick="window.print()">Print Chart</button>
 
   <div id="chartContainer">
     <h2 id="chartTitle" style="text-align: center; font-size: 1.5rem; margin-bottom: 0;"></h2>
@@ -187,12 +195,21 @@
       entryGrid.appendChild(div);
     }
 
-    // Presets
+    // Add preset names
     presetNames.forEach(name => createEntry(name));
 
-    // Custom
+    // Add 5 blank entries
     for (let i = 0; i < 5; i++) {
       createEntry('New Name', 0, true);
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
     }
 
     function generateChart() {
@@ -204,7 +221,8 @@
         const label = div.querySelector('label').textContent.trim();
         const qty = parseInt(div.querySelector('input[type="number"]').value);
 
-        if (!checkbox.checked && label && !isNaN(qty)) {
+        const isCustom = label === 'New Name';
+        if (!checkbox.checked && label && !isNaN(qty) && (!isCustom || label !== 'New Name')) {
           entries.push({ name: label, value: qty });
         }
       });
@@ -220,8 +238,9 @@
 
       const titleToggle = document.getElementById("titleToggle").checked;
       const title = titleToggle ? "Your Store, Your Say Responses" : "Membership Card Sales";
-      const startDate = document.getElementById("startDate").value;
-      const endDate = document.getElementById("endDate").value;
+
+      const startDate = formatDate(document.getElementById("startDate").value);
+      const endDate = formatDate(document.getElementById("endDate").value);
       const subtitle = (startDate && endDate) ? `From ${startDate} to ${endDate}` : "";
 
       document.getElementById("chartTitle").textContent = title;
@@ -255,9 +274,7 @@
             },
             y: {
               grid: { display: false },
-              ticks: {
-                font: { size: 14 }
-              }
+              ticks: { font: { size: 14 } }
             }
           },
           plugins: {
