@@ -19,6 +19,13 @@
       margin-bottom: 1.5rem;
     }
 
+    .subtitle {
+      text-align: center;
+      font-style: italic;
+      color: #555;
+      margin-bottom: 1rem;
+    }
+
     .date-inputs {
       display: flex;
       flex-wrap: wrap;
@@ -91,7 +98,6 @@
 
     #chartContainer {
       margin-top: 2rem;
-      display: none;
       background: white;
       padding: 1rem;
       border-radius: 8px;
@@ -102,17 +108,23 @@
       border-radius: 8px;
       display: block;
       margin: 0 auto;
+      max-width: 1000px;
+    }
+
+    #zeroList {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 1rem;
+      color: #666;
     }
 
     @media print {
       body * {
         visibility: hidden;
       }
-
       #chartContainer, #chartContainer * {
         visibility: visible;
       }
-
       #chartContainer {
         position: absolute;
         top: 0;
@@ -122,13 +134,11 @@
         margin: 0;
         padding: 0;
       }
-
       canvas {
         width: 1000px !important;
         height: 600px !important;
         max-height: 90vh;
       }
-
       @page {
         size: landscape;
         margin: 1cm;
@@ -138,6 +148,7 @@
 </head>
 <body>
   <h1>Membership Card Sales Chart</h1>
+  <div class="subtitle" id="subtitle"></div>
 
   <div class="date-inputs">
     <label for="startDate">Start Date:</label>
@@ -162,6 +173,7 @@
     <h2 id="chartTitle" style="text-align: center; font-size: 1.5rem; margin-bottom: 0;"></h2>
     <div id="chartSubtitle" class="center-text"></div>
     <canvas id="barChart" width="1000" height="600"></canvas>
+    <div id="zeroList"></div>
   </div>
 
   <script>
@@ -187,8 +199,8 @@
 
       const input = document.createElement("input");
       input.type = "number";
-      input.min = 0;
       input.value = qty;
+      input.min = 0;
 
       div.appendChild(checkbox);
       div.appendChild(label);
@@ -196,10 +208,7 @@
       entryGrid.appendChild(div);
     }
 
-    // Add presets
     presetNames.forEach((name) => createEntry(name));
-
-    // Add 5 custom slots
     for (let i = 0; i < 5; i++) {
       createEntry("New Name", 0, true);
     }
@@ -207,63 +216,56 @@
     function formatDate(dateStr) {
       if (!dateStr) return "";
       const d = new Date(dateStr);
-      const day = String(d.getDate()).padStart(2, "0");
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const year = d.getFullYear();
-      return `${day}/${month}/${year}`;
+      return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth() + 1).padStart(2,"0")}/${d.getFullYear()}`;
     }
 
     function generateChart() {
       const entries = [];
+      const zeros = [];
       const divs = document.querySelectorAll("#entryGrid .entry");
 
       divs.forEach((div) => {
         const checkbox = div.querySelector('input[type="checkbox"]');
         const label = div.querySelector("label").textContent.trim();
-        const qty = parseInt(div.querySelector('input[type="number"]').value);
+        const value = parseInt(div.querySelector('input[type="number"]').value);
         const isDefaultCustom = label === "New Name";
 
-        if (!checkbox.checked && label && !isNaN(qty) && (!isDefaultCustom || label !== "New Name")) {
-          entries.push({ name: label, value: qty });
+        if (!checkbox.checked && label && !isNaN(value) && (!isDefaultCustom || label !== "New Name")) {
+          if (value === 0) zeros.push(label);
+          else entries.push({ name: label, value });
         }
       });
 
-      if (entries.length === 0) {
+      if (entries.length === 0 && zeros.length === 0) {
         alert("Please enter at least one valid entry and leave that person unticked.");
         return;
       }
 
       entries.sort((a, b) => b.value - a.value);
-      const names = entries.map((e) => e.name);
-      const values = entries.map((e) => e.value);
 
-      const titleToggle = document.getElementById("titleToggle").checked;
-      const title = titleToggle ? "Your Store, Your Say Responses" : "Membership Card Sales";
+      const chartTitle = document.getElementById("titleToggle").checked
+        ? "Your Store, Your Say Responses"
+        : "Membership Card Sales";
 
-      const startDate = formatDate(document.getElementById("startDate").value);
-      const endDate = formatDate(document.getElementById("endDate").value);
-      const subtitle = startDate && endDate ? `From ${startDate} to ${endDate}` : "";
+      const start = formatDate(document.getElementById("startDate").value);
+      const end = formatDate(document.getElementById("endDate").value);
+      const subtitle = start && end ? `From ${start} to ${end}` : "";
 
-      document.getElementById("chartTitle").textContent = title;
+      document.getElementById("chartTitle").textContent = chartTitle;
       document.getElementById("chartSubtitle").textContent = subtitle;
-      document.getElementById("chartContainer").style.display = "block";
 
       const ctx = document.getElementById("barChart").getContext("2d");
-      if (window.barChartInstance) {
-        window.barChartInstance.destroy();
-      }
+      if (window.barChartInstance) window.barChartInstance.destroy();
 
       window.barChartInstance = new Chart(ctx, {
         type: "bar",
         data: {
-          labels: names,
+          labels: entries.map(e => e.name),
           datasets: [{
             label: "",
-            data: values,
+            data: entries.map(e => e.value),
             backgroundColor: "steelblue",
-            barThickness: function(ctx) {
-              return ctx.raw === 0 ? 6 : 24;
-            }
+            barThickness: 24
           }]
         },
         options: {
@@ -271,17 +273,8 @@
           responsive: false,
           maintainAspectRatio: false,
           scales: {
-            x: {
-              beginAtZero: true,
-              grid: { display: false },
-              ticks: { precision: 0 }
-            },
-            y: {
-              grid: { display: false },
-              ticks: {
-                font: { size: 14 }
-              }
-            }
+            x: { beginAtZero: true, grid: { display: false }, ticks: { precision: 0 } },
+            y: { grid: { display: false }, ticks: { font: { size: 14 } } }
           },
           plugins: {
             legend: { display: false },
@@ -289,6 +282,13 @@
           }
         }
       });
+
+      document.getElementById("zeroList").textContent =
+        zeros.length > 0
+          ? `No cards sold: ${zeros.sort().join(", ")}`
+          : "";
+
+      document.getElementById("chartContainer").style.display = "block";
     }
   </script>
 </body>
