@@ -2,40 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Membership Card Sales Chart</title>
+  <title>Membership Card Sales</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
       margin: 2rem;
-      background-color: #f9f9f9;
+      background: #f9f9f9;
       color: #333;
     }
 
     h1 {
       text-align: center;
       font-size: 2rem;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 1rem;
     }
 
     .subtitle {
       text-align: center;
       font-style: italic;
-      color: #555;
-      margin-bottom: 1rem;
+      color: #666;
+      margin-bottom: 1.5rem;
     }
 
     .date-inputs {
       display: flex;
-      flex-wrap: wrap;
       gap: 1rem;
-      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
       margin-bottom: 1.5rem;
-    }
-
-    .date-inputs label {
-      font-weight: 500;
     }
 
     .entry-grid {
@@ -46,13 +42,13 @@
     }
 
     .entry {
-      background: #fff;
-      padding: 0.8rem;
-      border-radius: 8px;
-      border: 1px solid #ddd;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      background: #fff;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
     }
 
     .entry label {
@@ -71,44 +67,27 @@
     }
 
     button {
-      margin-top: 1rem;
-      margin-right: 1rem;
       padding: 0.6rem 1.2rem;
       font-size: 1rem;
       font-weight: 500;
+      margin: 0.5rem;
       border: none;
       border-radius: 6px;
-      cursor: pointer;
       background-color: #0077cc;
       color: white;
-      transition: background-color 0.3s ease;
+      cursor: pointer;
     }
 
     button:hover {
       background-color: #005fa3;
     }
 
-    .center-text {
-      text-align: center;
-      margin-top: 0.5rem;
-      font-size: 1rem;
-      font-style: italic;
-      color: #555;
-    }
-
     #chartContainer {
-      margin-top: 2rem;
       background: white;
       padding: 1rem;
       border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    canvas {
-      border-radius: 8px;
-      display: block;
-      margin: 0 auto;
-      max-width: 1000px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      margin-top: 2rem;
     }
 
     #zeroList {
@@ -118,13 +97,22 @@
       color: #666;
     }
 
+    canvas {
+      display: block;
+      margin: 0 auto;
+      max-width: 1000px;
+      border-radius: 8px;
+    }
+
     @media print {
       body * {
         visibility: hidden;
       }
+
       #chartContainer, #chartContainer * {
         visibility: visible;
       }
+
       #chartContainer {
         position: absolute;
         top: 0;
@@ -134,11 +122,12 @@
         margin: 0;
         padding: 0;
       }
+
       canvas {
         width: 1000px !important;
-        height: 600px !important;
-        max-height: 90vh;
+        height: auto !important;
       }
+
       @page {
         size: landscape;
         margin: 1cm;
@@ -151,28 +140,28 @@
   <div class="subtitle" id="subtitle"></div>
 
   <div class="date-inputs">
-    <label for="startDate">Start Date:</label>
-    <input type="date" id="startDate" />
-    <label for="endDate">End Date:</label>
-    <input type="date" id="endDate" />
+    <label>Start Date: <input type="date" id="startDate"></label>
+    <label>End Date: <input type="date" id="endDate"></label>
   </div>
 
-  <div style="margin-bottom: 1.5rem;">
+  <div style="text-align: center; margin-bottom: 1rem;">
     <label>
       <input type="checkbox" id="titleToggle" />
-      Show “Your Store, Your Say Responses” instead of “Membership Card Sales”
+      Show “Your Store, Your Say Responses” instead
     </label>
   </div>
 
   <div class="entry-grid" id="entryGrid"></div>
 
-  <button onclick="generateChart()">Generate Chart</button>
-  <button onclick="window.print()">Print Chart</button>
+  <div style="text-align: center;">
+    <button onclick="generateChart()">Generate Chart</button>
+    <button onclick="window.print()">Print Chart</button>
+  </div>
 
-  <div id="chartContainer">
+  <div id="chartContainer" style="display: none;">
     <h2 id="chartTitle" style="text-align: center; font-size: 1.5rem; margin-bottom: 0;"></h2>
-    <div id="chartSubtitle" class="center-text"></div>
-    <canvas id="barChart"></canvas>
+    <div id="chartSubtitle" class="subtitle"></div>
+    <canvas id="barChart" height="600"></canvas>
     <div id="zeroList"></div>
   </div>
 
@@ -185,7 +174,7 @@
 
     const entryGrid = document.getElementById("entryGrid");
 
-    function createEntry(name = "", qty = 0, isCustom = false) {
+    function createEntry(name = "", isCustom = false) {
       const div = document.createElement("div");
       div.className = "entry";
 
@@ -199,7 +188,7 @@
 
       const input = document.createElement("input");
       input.type = "number";
-      input.value = qty;
+      input.value = 0;
       input.min = 0;
 
       div.appendChild(checkbox);
@@ -208,51 +197,50 @@
       entryGrid.appendChild(div);
     }
 
-    presetNames.forEach((name) => createEntry(name));
-    for (let i = 0; i < 5; i++) {
-      createEntry("New Name", 0, true);
-    }
+    presetNames.forEach(n => createEntry(n));
+    for (let i = 0; i < 5; i++) createEntry("New Name", true);
 
     function formatDate(dateStr) {
       if (!dateStr) return "";
       const d = new Date(dateStr);
-      return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth() + 1).padStart(2,"0")}/${d.getFullYear()}`;
+      return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
     }
 
     function generateChart() {
       const entries = [];
       const zeros = [];
-      const divs = document.querySelectorAll("#entryGrid .entry");
 
-      divs.forEach((div) => {
-        const checkbox = div.querySelector('input[type="checkbox"]');
+      document.querySelectorAll(".entry").forEach(div => {
+        const checkbox = div.querySelector("input[type='checkbox']").checked;
         const label = div.querySelector("label").textContent.trim();
-        const value = parseInt(div.querySelector('input[type="number"]').value);
-        const isDefaultCustom = label === "New Name";
+        const value = parseInt(div.querySelector("input[type='number']").value);
+        const isCustom = label === "New Name";
 
-        if (!checkbox.checked && label && !isNaN(value) && (!isDefaultCustom || label !== "New Name")) {
+        if (!checkbox && label && !isNaN(value) && (!isCustom || label !== "New Name")) {
           if (value === 0) zeros.push(label);
           else entries.push({ name: label, value });
         }
       });
 
       if (entries.length === 0 && zeros.length === 0) {
-        alert("Please enter at least one valid entry and leave that person unticked.");
+        alert("Please enter at least one valid entry.");
         return;
       }
-
-      entries.sort((a, b) => b.value - a.value);
 
       const chartTitle = document.getElementById("titleToggle").checked
         ? "Your Store, Your Say Responses"
         : "Membership Card Sales";
 
-      const start = formatDate(document.getElementById("startDate").value);
-      const end = formatDate(document.getElementById("endDate").value);
-      const subtitle = start && end ? `From ${start} to ${end}` : "";
+      const subtitle = (() => {
+        const start = formatDate(document.getElementById("startDate").value);
+        const end = formatDate(document.getElementById("endDate").value);
+        return start && end ? `From ${start} to ${end}` : "";
+      })();
 
       document.getElementById("chartTitle").textContent = chartTitle;
       document.getElementById("chartSubtitle").textContent = subtitle;
+
+      entries.sort((a, b) => b.value - a.value);
 
       const ctx = document.getElementById("barChart").getContext("2d");
       if (window.barChartInstance) window.barChartInstance.destroy();
@@ -265,7 +253,7 @@
             label: "",
             data: entries.map(e => e.value),
             backgroundColor: "steelblue",
-            barThickness: 600 / entries.length  // dynamic height based on count
+            barThickness: Math.max(20, Math.min(40, 600 / (entries.length || 1)))
           }]
         },
         options: {
@@ -273,7 +261,7 @@
           responsive: true,
           maintainAspectRatio: false,
           scales: {
-            x: { beginAtZero: true, grid: { display: false }, ticks: { precision: 0 } },
+            x: { beginAtZero: true, grid: { display: false } },
             y: { grid: { display: false }, ticks: { font: { size: 14 } } }
           },
           plugins: {
@@ -283,6 +271,8 @@
         }
       });
 
+      document.getElementById("chartContainer").style.display = "block";
+
       const zeroLabel = document.getElementById("titleToggle").checked
         ? "No Your Store, Your Say Responses"
         : "No cards sold";
@@ -291,8 +281,6 @@
         zeros.length > 0
           ? `${zeroLabel}: ${zeros.sort().join(", ")}`
           : "";
-
-      document.getElementById("chartContainer").style.display = "block";
     }
   </script>
 </body>
