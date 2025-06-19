@@ -17,21 +17,36 @@
       margin-bottom: 1rem;
     }
 
-    p {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
+    .entry-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
     }
 
-    textarea {
-      width: 100%;
-      height: 160px;
-      font-size: 1rem;
-      padding: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      resize: vertical;
+    .entry {
       background: #fff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      padding: 0.8rem;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .entry label {
+      flex: 1;
+      margin-left: 0.5rem;
+    }
+
+    .entry input[type="number"] {
+      width: 60px;
+      padding: 0.3rem;
+      margin-left: 0.5rem;
+    }
+
+    .entry input[type="checkbox"] {
+      margin-right: 0.5rem;
     }
 
     button {
@@ -90,9 +105,10 @@
 </head>
 <body>
   <h1>Membership Card Sales Chart</h1>
-  <p>Enter one name and number per line, separated by a comma (e.g., <code>Alice,12</code>)</p>
-  <textarea id="inputData" placeholder="Alice,12&#10;Bob,8&#10;Charlie,15"></textarea>
-  <br>
+  <p>Enter quantities below. Tick the box to exclude a person from the chart.</p>
+
+  <div class="entry-grid" id="entryGrid"></div>
+
   <button onclick="generateChart()">Generate Chart</button>
   <button onclick="window.print()">Print Chart</button>
 
@@ -102,28 +118,67 @@
   </div>
 
   <script>
-    function generateChart() {
-      const input = document.getElementById('inputData').value.trim();
-      const lines = input.split('\n');
-      let entries = [];
+    const presetNames = [
+      "Abigail", "Debbie", "Diane", "Elizabeth", "George",
+      "Harvey", "Jacqueline", "Jessica", "Joshua", "Laura",
+      "Nathan", "Pauline", "Samantha", "Wendi"
+    ].sort();
 
-      for (const line of lines) {
-        const [name, value] = line.split(',');
-        if (name && !isNaN(parseInt(value))) {
-          entries.push({ name: name.trim(), value: parseInt(value) });
+    const entryGrid = document.getElementById('entryGrid');
+
+    function createEntry(name = '', qty = 0, isCustom = false) {
+      const div = document.createElement('div');
+      div.className = 'entry';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+
+      const label = document.createElement('label');
+      label.textContent = name;
+      label.contentEditable = isCustom; // allow editing custom names
+      label.spellcheck = false;
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.min = 0;
+      input.value = qty;
+
+      div.appendChild(checkbox);
+      div.appendChild(label);
+      div.appendChild(input);
+      entryGrid.appendChild(div);
+    }
+
+    // Create preset entries
+    presetNames.forEach(name => createEntry(name));
+
+    // Add 5 extra blank custom fields
+    for (let i = 0; i < 5; i++) {
+      createEntry('New Name', 0, true);
+    }
+
+    function generateChart() {
+      const entries = [];
+      const divs = document.querySelectorAll('#entryGrid .entry');
+
+      divs.forEach(div => {
+        const checkbox = div.querySelector('input[type="checkbox"]');
+        const label = div.querySelector('label').textContent.trim();
+        const qty = parseInt(div.querySelector('input[type="number"]').value);
+
+        if (!checkbox.checked && label && !isNaN(qty) && qty > 0) {
+          entries.push({ name: label, value: qty });
         }
-      }
+      });
 
       if (entries.length === 0) {
-        alert("Please enter at least one valid line in the format: Name,Number");
+        alert("Please enter at least one quantity greater than 0 and leave that person unticked.");
         return;
       }
 
-      // Sort entries by value descending
       entries.sort((a, b) => b.value - a.value);
-
-      const names = entries.map(entry => entry.name);
-      const values = entries.map(entry => entry.value);
+      const names = entries.map(e => e.name);
+      const values = entries.map(e => e.value);
 
       document.getElementById('chartContainer').style.display = 'block';
 
@@ -152,30 +207,22 @@
               title: {
                 display: true,
                 text: 'Cards Sold',
-                font: {
-                  size: 14
-                }
+                font: { size: 14 }
               }
             },
             y: {
               ticks: {
-                font: {
-                  size: 14
-                }
+                font: { size: 14 }
               },
               title: {
                 display: true,
                 text: 'Name',
-                font: {
-                  size: 14
-                }
+                font: { size: 14 }
               }
             }
           },
           plugins: {
-            legend: {
-              display: false
-            }
+            legend: { display: false }
           }
         }
       });
