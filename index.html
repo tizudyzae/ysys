@@ -2,169 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Membership Card Sales</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Membership Chart</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
-      font-family: Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
-      margin: 2rem;
-      background-color: #f9f9f9;
-      color: #333;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f4f4f4;
     }
-
     h1 {
       text-align: center;
-      font-size: 2rem;
-      font-weight: bold;
-      margin-bottom: 1rem;
     }
-
-    .subtitle {
-      text-align: center;
-      font-style: italic;
-      color: #666;
-      margin-bottom: 1.5rem;
-    }
-
-    .date-inputs {
+    .date-toggle {
+      margin-bottom: 20px;
       display: flex;
-      gap: 1rem;
       flex-wrap: wrap;
-      justify-content: center;
-      margin-bottom: 1.5rem;
+      gap: 1rem;
+      align-items: center;
     }
-
     .entry-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1rem;
-      margin-bottom: 2rem;
+      margin-bottom: 20px;
     }
-
     .entry {
+      background: white;
+      padding: 10px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      background: #fff;
-      padding: 0.8rem;
-      border: 1px solid #ddd;
-      border-radius: 6px;
+      gap: 10px;
     }
-
     .entry label {
       flex: 1;
-      margin-left: 0.5rem;
     }
-
-    .entry input[type="number"] {
-      width: 60px;
-      padding: 0.3rem;
-      margin-left: 0.5rem;
-    }
-
-    .entry input[type="checkbox"] {
-      margin-right: 0.5rem;
-    }
-
     button {
-      padding: 0.6rem 1.2rem;
-      font-size: 1rem;
-      font-weight: 500;
-      margin: 0.5rem;
-      border: none;
-      border-radius: 6px;
-      background-color: #0077cc;
-      color: white;
+      margin-right: 10px;
+      padding: 10px 16px;
       cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #005fa3;
-    }
-
-    #chartContainer {
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      margin-top: 2rem;
-    }
-
-    #zeroList {
-      text-align: center;
-      margin-top: 2rem;
-      font-size: 1rem;
-      color: #666;
-    }
-
-    canvas {
-      display: block;
-      margin: 0 auto;
-      max-width: 1000px;
-      border-radius: 8px;
-    }
-
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-
-      #chartContainer, #chartContainer * {
-        visibility: visible;
-      }
-
-      #chartContainer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        transform: scale(0.85);
-        transform-origin: top left;
-      }
-
-      canvas {
-        width: 1000px !important;
-        height: auto !important;
-      }
-
-      @page {
-        size: landscape;
-        margin: 1cm;
-      }
     }
   </style>
 </head>
 <body>
-  <h1>Membership Card Sales Chart</h1>
-  <div class="subtitle" id="subtitle"></div>
+  <h1>Membership Chart Generator</h1>
 
-  <div class="date-inputs">
-    <label>Start Date: <input type="date" id="startDate"></label>
-    <label>End Date: <input type="date" id="endDate"></label>
-  </div>
-
-  <div style="text-align: center; margin-bottom: 1rem;">
+  <div class="date-toggle">
+    <label>Start Date: <input type="date" id="startDate" /></label>
+    <label>End Date: <input type="date" id="endDate" /></label>
     <label>
       <input type="checkbox" id="titleToggle" />
-      Show “Your Store, Your Say Responses” instead
+      Use "Your Store, Your Say Responses"
     </label>
   </div>
 
   <div class="entry-grid" id="entryGrid"></div>
 
-  <div style="text-align: center;">
-    <button onclick="generateChart()">Generate Chart</button>
-    <button onclick="window.print()">Print Chart</button>
-  </div>
-
-  <div id="chartContainer" style="display: none;">
-    <h2 id="chartTitle" style="text-align: center; font-size: 1.5rem; margin-bottom: 0;"></h2>
-    <div id="chartSubtitle" class="subtitle"></div>
-    <canvas id="barChart" height="600"></canvas>
-    <div id="zeroList"></div>
-  </div>
+  <button onclick="generatePDF()">Generate PDF</button>
 
   <script>
     const presetNames = [
@@ -175,7 +68,7 @@
 
     const entryGrid = document.getElementById("entryGrid");
 
-    function createEntry(name = "", isCustom = false) {
+    function createEntry(name = "New Name", isCustom = false) {
       const div = document.createElement("div");
       div.className = "entry";
 
@@ -192,95 +85,110 @@
       input.value = 0;
       input.min = 0;
 
-      div.appendChild(checkbox);
-      div.appendChild(label);
-      div.appendChild(input);
+      div.append(checkbox, label, input);
       entryGrid.appendChild(div);
     }
 
-    presetNames.forEach(n => createEntry(n));
-    for (let i = 0; i < 5; i++) createEntry("New Name", true);
+    presetNames.forEach(name => createEntry(name));
+    for (let i = 0; i < 5; i++) createEntry();
 
-    function formatDate(dateStr) {
-      if (!dateStr) return "";
-      const d = new Date(dateStr);
-      return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+    function formatDate(d) {
+      if (!d) return "";
+      const date = new Date(d);
+      return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}/${date.getFullYear()}`;
     }
 
-    function generateChart() {
-      const entries = [];
-      const zeros = [];
+    async function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
 
+      const entries = [], zeroes = [];
       document.querySelectorAll(".entry").forEach(div => {
-        const checkbox = div.querySelector("input[type='checkbox']").checked;
+        const checked = div.querySelector("input[type='checkbox']").checked;
         const label = div.querySelector("label").textContent.trim();
         const value = parseInt(div.querySelector("input[type='number']").value);
-        const isCustom = label === "New Name";
+        const isDefault = label === "New Name";
 
-        if (!checkbox && label && !isNaN(value) && (!isCustom || label !== "New Name")) {
-          if (value === 0) zeros.push(label);
+        if (!checked && label && !isNaN(value) && (!isDefault || label !== "New Name")) {
+          if (value === 0) zeroes.push(label);
           else entries.push({ name: label, value });
         }
       });
 
-      if (entries.length === 0 && zeros.length === 0) {
-        alert("Please enter at least one valid entry.");
-        return;
-      }
-
-      const chartTitle = document.getElementById("titleToggle").checked
-        ? "Your Store, Your Say Responses"
-        : "Membership Card Sales";
-
-      const subtitle = (() => {
-        const start = formatDate(document.getElementById("startDate").value);
-        const end = formatDate(document.getElementById("endDate").value);
-        return start && end ? `From ${start} to ${end}` : "";
-      })();
-
-      document.getElementById("chartTitle").textContent = chartTitle;
-      document.getElementById("chartSubtitle").textContent = subtitle;
-
       entries.sort((a, b) => b.value - a.value);
+      const maxValue = Math.max(...entries.map(e => e.value), 1);
 
-      const ctx = document.getElementById("barChart").getContext("2d");
-      if (window.barChartInstance) window.barChartInstance.destroy();
+      const titleToggle = document.getElementById("titleToggle").checked;
+      const title = titleToggle ? "Your Store, Your Say Responses" : "Membership Card Sales";
+      const start = formatDate(document.getElementById("startDate").value);
+      const end = formatDate(document.getElementById("endDate").value);
+      const subtitle = start && end ? `From ${start} to ${end}` : "";
 
-      window.barChartInstance = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: entries.map(e => e.name),
-          datasets: [{
-            label: "",
-            data: entries.map(e => e.value),
-            backgroundColor: "steelblue"
-          }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: false,
-          maintainAspectRatio: false,
-          scales: {
-            x: { beginAtZero: true, grid: { display: false } },
-            y: { grid: { display: false }, ticks: { font: { size: 14 } } }
-          },
-          plugins: {
-            legend: { display: false },
-            title: { display: false }
-          }
-        }
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      const leftMargin = 20;               // REDUCED from 40 to 20
+      const labelWidth = 160;              // INCREASED from 140 to 160
+      const barPadding = 12;
+      const barSpacing = 10;
+      const topMargin = 80;
+      const bottomMargin = 60;
+      const maxBarHeight = 36;
+
+      const chartHeight = pageHeight - topMargin - bottomMargin - (zeroes.length ? 60 : 0);
+      const barHeight = Math.min(
+        maxBarHeight,
+        Math.floor((chartHeight - (entries.length - 1) * barSpacing) / entries.length)
+      );
+
+      // Title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(26);
+      doc.text(title, pageWidth / 2, 40, { align: 'center' });
+
+      // Subtitle
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(14);
+      doc.text(subtitle, pageWidth / 2, 62, { align: 'center' });
+
+      const chartStartX = leftMargin + labelWidth;
+      const barMaxWidth = pageWidth - chartStartX - 40;
+      let y = topMargin;
+
+      entries.forEach(entry => {
+        const barLength = (entry.value / maxValue) * barMaxWidth;
+        const yMiddle = y + barHeight / 2 + 5;
+
+        const nameFontSize = Math.max(12, Math.min(20, barHeight * 0.6));
+        const valueFontSize = Math.max(14, Math.min(24, barHeight * 0.65));
+
+        doc.setFontSize(nameFontSize);
+        doc.setFont('helvetica', 'bold');
+        doc.text(entry.name, chartStartX - barPadding, yMiddle, { align: 'right' });
+
+        doc.setFillColor(60, 120, 180);
+        doc.rect(chartStartX, y, barLength, barHeight, 'F');
+
+        doc.setFontSize(valueFontSize);
+        doc.setFont('helvetica', 'bold');
+        doc.text(String(entry.value), chartStartX + barLength + 8, yMiddle);
+
+        y += barHeight + barSpacing;
       });
 
-      document.getElementById("chartContainer").style.display = "block";
+      if (zeroes.length) {
+        y += 30;
+        const noSalesTitle = titleToggle ? "No Your Store, Your Say Responses:" : "No Membership Card Sales:";
+        const noSalesList = zeroes.sort().join(", ");
+        const wrapped = doc.splitTextToSize(noSalesList, pageWidth - 80);
 
-      const zeroLabel = document.getElementById("titleToggle").checked
-        ? "No Your Store, Your Say Responses"
-        : "No cards sold";
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(11);
+        doc.text(noSalesTitle, pageWidth / 2, y, { align: 'center' });
+        doc.text(wrapped, pageWidth / 2, y + 14, { align: 'center' });
+      }
 
-      document.getElementById("zeroList").textContent =
-        zeros.length > 0
-          ? `${zeroLabel}: ${zeros.sort().join(", ")}`
-          : "";
+      doc.save("membership_chart.pdf");
     }
   </script>
 </body>
